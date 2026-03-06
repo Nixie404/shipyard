@@ -1,0 +1,85 @@
+.TH YARDCTL 1 "2026-03-06" "yardctl \n" "Shipyard Manual"
+.SH NAME
+yardctl \- Docker-centered automated deployment tool
+.SH SYNOPSIS
+.B yardctl
+[\fICOMMAND\fR] [\fIFLAGS...\fR]
+.SH DESCRIPTION
+\fByardctl\fR (Shipyard) is a docker-centric automated deployment tool that fetches your container orchestrations from Git repositories (including via private SSH keys), automatically discovers Docker Compose stacks inside them, and manages their entire lifecycle.
+.PP
+By using \fByardctl\fR, you can track GitOps configurations. It includes a built-in systemd timer to regularly keep the deployed compose stacks in sync with their upstream repository state.
+.SH OPTIONS
+.TP
+\fB\-h, \-\-help\fR
+Show the help text, displaying available commands.
+.SH COMMANDS
+.SS "Initialization & Maintenance"
+.TP
+\fByardctl init\fR
+Sets up \fB/etc/yardctl\fR and \fB/var/lib/yardctl\fR files and privileges. Usually run once.
+.TP
+\fByardctl check\fR
+Comprehensive check for environment readiness (Docker socket access, doas/sudo presence, Git versions, etc.).
+.TP
+\fByardctl doctor\fR
+Run a quick health check of all yardctl prerequisites.
+.TP
+\fByardctl status\fR
+Print a fast summary of tracked repositories, deployed stacks, component versions, and running containers.
+.TP
+\fByardctl purge [ \-f ]\fR
+Revert the actions of \fByardctl init\fR safely. Destroys configurations and uninstalls timers.
+.SS "Repositories"
+.TP
+\fByardctl repo add\fR \fI<url> \fR[\fB\-b\fR \fIbranch\fR]
+Clone a new template repository containing Docker Compose files. 
+.TP
+\fByardctl repo list\fR
+List tracked templates.
+.TP
+\fByardctl repo remove\fR \fI<name>\fR
+Stop tracking the specified repository.
+.TP
+\fByardctl repo sync\fR
+Pull the latest commits for all templates and re-evaluate Docker stack availabilities.
+.SS "Stacks"
+.TP
+\fByardctl stack list\fR
+Show all composed orchestrations yardctl has found in your attached git repos.
+.TP
+\fByardctl stack info\fR \fI<stack>\fR
+Show detailed location and deployment data for a specific compose stack.
+.TP
+\fByardctl stack deploy\fR \fI<stack>\fR
+Deploy/Up the specified stack.
+.TP
+\fByardctl stack destroy\fR \fI<stack>\fR
+Stop and remove all containers for the specified stack.
+.SS "Fast Docker Wrappers"
+.TP
+\fByardctl sync\fR
+Alias for \fByardctl repo sync\fR.
+.TP
+\fByardctl deploy\fR \fI<stack>\fR
+Alias for \fByardctl stack deploy\fR.
+.TP
+\fByardctl ps\fR [\fIstack\fR]
+List running containers, globally across all tools or inside a specific stack.
+.TP
+\fByardctl logs\fR \fI<stack>\fR [\fIservice\fR] [\fB\-f\fR]
+Tail the logs of a launched stack's components.
+.TP
+\fByardctl exec\fR \fI<stack>\fR \fI<service>\fR [\fIcommand...\fR]
+Spawn a transparent process inside a running container, e.g., \fByardctl exec api db psql\fR.
+.TP
+\fByardctl restart\fR \fI<stack>\fR [\fIservice\fR]
+Restart the deployed containers.
+.TP
+\fByardctl events\fR
+Stream standard Docker daemon lifecycle events.
+.SH CONFIGURATION
+The main configuration is located at \fB/etc/yardctl/config.json\fR.
+.B yardctl config edit
+will automatically shell into your $EDITOR for rapid tweaks, but changes should mostly happen via CLI commands.
+.SH AUTHORS
+Written and maintained by Unix/Linux enthusiasts. For more, see https://github.com/Nixie404/yardctl.

@@ -1,0 +1,17 @@
+[Unit]
+Description=Shipyard (yardctl) automatic sync
+Documentation=https://github.com/Nixie404/yardctl
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/yardctl sync
+StandardOutput=journal
+StandardError=journal
+# Run as root to access Docker socket; adjust if using rootless Docker
+# User=yardctl
+# Group=yardctl
+
+[Install]
+WantedBy=multi-user.target

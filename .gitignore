@@ -1,0 +1,26 @@
+# Binaries
+/yardctl
+
+# Build artifacts and packages
+/dist/*.deb
+/dist/*_tmpdeb/
+*.pkg.tar.zst
+*.pkg.tar.xz
+*.tar.gz
+/src/
+/pkg/
+
+# Go stuff
+*.test
+*.prof
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

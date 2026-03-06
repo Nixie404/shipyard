@@ -7,6 +7,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 VERSION="${1:-0.1.0}"
+# Debian version must start with a digit
+if [[ ! "$VERSION" =~ ^[0-9] ]]; then
+  echo "⚠️  Warning: Version '$VERSION' does not start with a digit. Prepending '0.0.0+' for Debian compatibility."
+  VERSION="0.0.0+${VERSION}"
+fi
 ARCH="$(dpkg --print-architecture 2>/dev/null || echo amd64)"
 PKG_NAME="yardctl"
 PKG_DIR="${PROJECT_DIR}/dist/${PKG_NAME}_${VERSION}_${ARCH}"

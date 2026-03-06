@@ -26,8 +26,12 @@ jobs:
       - name: Build Debian Package
         run: |
           chmod +x dist/build-deb.sh
-          # Get version from git tag or default to 0.1.0-dev
-          VERSION=$(git describe --tags --always | sed 's/^v//' | sed 's/-/./g')
+          # Get version from git tag, fallback to 0.0.0+<sha> if no tags
+          VERSION=$(git describe --tags --always | sed 's/^v//')
+          if [[ ! "$VERSION" =~ ^[0-9] ]]; then
+            VERSION="0.0.0+$VERSION"
+          fi
+          VERSION=$(echo "$VERSION" | sed 's/-/./g')
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           ./dist/build-deb.sh "$VERSION"
 
@@ -59,8 +63,19 @@ jobs:
           chown -R builder:builder .
           # Fix "dubious ownership" error in Git
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          
+          # Fix Go cache permission issues by setting paths to builder home
+          export GOCACHE=/home/builder/.cache/go-build
+          export GOPATH=/home/builder/go
+          mkdir -p "$GOCACHE" "$GOPATH"
+          chown -R builder:builder /home/builder/.cache /home/builder/go
           # Update version in PKGBUILD to match git tag or current ref
-          VERSION=$(git describe --tags --always | sed 's/^v//' | sed 's/-/./g')
+          VERSION=$(git describe --tags --always | sed 's/^v//')
+          if [[ ! "$VERSION" =~ ^[0-9] ]]; then
+            VERSION="0.0.0.$VERSION"
+          fi
+          VERSION=$(echo "$VERSION" | sed 's/-/./g')
+          
           sed -i "s/pkgver=.*/pkgver=$VERSION/" PKGBUILD
           sudo -u builder makepkg -scf --noconfirm
 

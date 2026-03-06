@@ -31,7 +31,7 @@ jobs:
           # Use a nightly version format: version-shortsha-debug
           SHA=$(git rev-parse --short HEAD)
           DATE=$(date +%Y%m%d)
-          VERSION="nightly-${DATE}-${SHA}"
+          VERSION="0.0.0+nightly${DATE}${SHA}"
           
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           ./dist/build-deb.sh "$VERSION"
@@ -46,7 +46,7 @@ jobs:
         env:
           DEBUG: '1'
         run: |
-          VERSION="nightly-$(date +%Y%m%d)-$(git rev-parse --short HEAD)"
+          VERSION="0.0.0+nightly$(date +%Y%m%d)$(git rev-parse --short HEAD)"
           CGO_ENABLED=0 go build \
             -trimpath \
             -gcflags="all=-N -l" \
@@ -84,10 +84,16 @@ jobs:
           chown -R builder:builder .
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           
+          # Fix Go cache permission issues by setting paths to builder home
+          export GOCACHE=/home/builder/.cache/go-build
+          export GOPATH=/home/builder/go
+          mkdir -p "$GOCACHE" "$GOPATH"
+          chown -R builder:builder /home/builder/.cache /home/builder/go
+          
           # Use nightly versioning
           SHA=$(git rev-parse --short HEAD)
           DATE=$(date +%Y%m%d)
-          VERSION="nightly.${DATE}.${SHA}"
+          VERSION="0.0.0.nightly.${DATE}.${SHA}"
           
           sed -i "s/pkgver=.*/pkgver=$VERSION/" PKGBUILD
           sudo -u builder -E makepkg -scf --noconfirm

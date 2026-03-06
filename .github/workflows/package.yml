@@ -56,8 +56,9 @@ jobs:
           useradd builder -m
           echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown -R builder:builder .
+          # Fix "dubious ownership" error in Git
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           # Update version in PKGBUILD to match git tag or current ref
-          # Arch pkgver doesn't like dashes, so we replace them with dots
           VERSION=$(git describe --tags --always | sed 's/^v//' | sed 's/-/./g')
           sed -i "s/pkgver=.*/pkgver=$VERSION/" PKGBUILD
           sudo -u builder makepkg -sc --noconfirm

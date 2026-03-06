@@ -16,12 +16,23 @@ echo "📦 Building ${PKG_NAME} ${VERSION} (${ARCH}) .deb package..."
 # ── Build binary ──
 echo "🔨 Compiling..."
 cd "$PROJECT_DIR"
+
+BUILD_FLAGS=""
+LDFLAGS="-X shipyard/cmd.Version=${VERSION} \
+    -X shipyard/cmd.Commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) \
+    -X shipyard/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+if [ "${DEBUG:-0}" = "1" ]; then
+    echo "🪲 Building with debug symbols (optimizations disabled)..."
+    BUILD_FLAGS="-gcflags=all=-N -l"
+else
+    LDFLAGS="-s -w $LDFLAGS"
+fi
+
 CGO_ENABLED=0 go build \
   -trimpath \
-  -ldflags "-s -w \
-    -X shipyard/cmd.Version=${VERSION} \
-    -X shipyard/cmd.Commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) \
-    -X shipyard/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  ${BUILD_FLAGS} \
+  -ldflags "${LDFLAGS}" \
   -o "${PKG_NAME}"
 
 # ── Assemble package tree ──
@@ -129,24 +140,17 @@ EOF
 chmod 755 "${PKG_DIR}/DEBIAN/postrm"
 
 # ── Build .deb ──
-echo "📦 Building .deb manually..."
+echo "📦 Building .deb package using dpkg-deb..."
 DEB_FILE="${PROJECT_DIR}/dist/${PKG_NAME}_${VERSION}_${ARCH}.deb"
-TMP_DEB_DIR="${PKG_DIR}_tmpdeb"
-mkdir -p "$TMP_DEB_DIR"
 
-echo "2.0" > "$TMP_DEB_DIR/debian-binary"
-tar -czf "$TMP_DEB_DIR/control.tar.gz" -C "${PKG_DIR}/DEBIAN" .
+# Ensure the parent directory for the .deb file exists
+mkdir -p "$(dirname "$DEB_FILE")"
 
-# Move DEBIAN out of the way before tar
-mv "${PKG_DIR}/DEBIAN" "${PKG_DIR}/.DEBIAN"
-tar -czf "$TMP_DEB_DIR/data.tar.gz" -C "${PKG_DIR}" --exclude=.DEBIAN .
+# Build the package
+dpkg-deb --build "${PKG_DIR}" "${DEB_FILE}"
 
-# Archive using ar
-rm -f "$DEB_FILE"
-ar q "$DEB_FILE" "$TMP_DEB_DIR/debian-binary" "$TMP_DEB_DIR/control.tar.gz" "$TMP_DEB_DIR/data.tar.gz"
-
-# Cleanup staging dirs
-rm -rf "$PKG_DIR" "$TMP_DEB_DIR"
+# Cleanup staging dir
+rm -rf "$PKG_DIR"
 
 echo ""
 echo "✅ Package built: ${DEB_FILE}"

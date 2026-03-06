@@ -14,12 +14,24 @@ source=()
 build() {
   cd "${srcdir}/.."
   export CGO_ENABLED=0
-  export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
-  go build -ldflags "-s -w \
-    -X shipyard/cmd.Version=${pkgver} \
+  
+  local build_flags="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+  local ld_flags="-X shipyard/cmd.Version=${pkgver} \
     -X shipyard/cmd.Commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) \
-    -X shipyard/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    -o ${pkgname}
+    -X shipyard/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  if [ "${DEBUG:-0}" = "1" ]; then
+    echo "🪲 Building with debug symbols..."
+    # Disable optimizations and keep symbols
+    export GOFLAGS="${build_flags} -gcflags=all=-N -l"
+    # Ensure makepkg doesn't strip the binary
+    options=(!strip)
+  else
+    export GOFLAGS="${build_flags}"
+    ld_flags="-s -w ${ld_flags}"
+  fi
+
+  go build -ldflags "${ld_flags}" -o ${pkgname}
 }
 
 package() {

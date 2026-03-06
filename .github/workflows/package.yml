@@ -21,13 +21,14 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-          cache: true
+          cache: false
 
       - name: Build Debian Package
         run: |
           chmod +x dist/build-deb.sh
           # Get version from git tag or default to 0.1.0-dev
-          VERSION=$(git describe --tags --always | sed 's/^v//')
+          VERSION=$(git describe --tags --always | sed 's/^v//' | sed 's/-/./g')
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           ./dist/build-deb.sh "$VERSION"
 
       - name: Upload Debian Artifact
@@ -61,7 +62,7 @@ jobs:
           # Update version in PKGBUILD to match git tag or current ref
           VERSION=$(git describe --tags --always | sed 's/^v//' | sed 's/-/./g')
           sed -i "s/pkgver=.*/pkgver=$VERSION/" PKGBUILD
-          sudo -u builder makepkg -sc --noconfirm
+          sudo -u builder makepkg -scf --noconfirm
 
       - name: Upload Arch Artifact
         uses: actions/upload-artifact@v4

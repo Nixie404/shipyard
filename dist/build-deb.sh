@@ -17,21 +17,21 @@ echo "📦 Building ${PKG_NAME} ${VERSION} (${ARCH}) .deb package..."
 echo "🔨 Compiling..."
 cd "$PROJECT_DIR"
 
-BUILD_FLAGS=""
+BUILD_FLAGS=()
 LDFLAGS="-X shipyard/cmd.Version=${VERSION} \
     -X shipyard/cmd.Commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) \
     -X shipyard/cmd.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 if [ "${DEBUG:-0}" = "1" ]; then
     echo "🪲 Building with debug symbols (optimizations disabled)..."
-    BUILD_FLAGS="-gcflags=all=-N -l"
+    BUILD_FLAGS=("-gcflags=all=-N -l")
 else
     LDFLAGS="-s -w $LDFLAGS"
 fi
 
 CGO_ENABLED=0 go build \
   -trimpath \
-  ${BUILD_FLAGS} \
+  "${BUILD_FLAGS[@]}" \
   -ldflags "${LDFLAGS}" \
   -o "${PKG_NAME}"
 

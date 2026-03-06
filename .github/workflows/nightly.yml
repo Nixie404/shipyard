@@ -103,3 +103,36 @@ jobs:
         with:
           name: yardctl-debug-arch
           path: "*.pkg.tar.zst"
+
+  release-nightly:
+    name: Publish Nightly Release
+    needs: [build-nightly, build-nightly-arch]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: ./artifacts
+
+      - name: Create or Update Nightly Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Nightly build"
+          body: |
+            This is an automated nightly build of yardctl.
+            
+            **Warning:** These are debug builds and may be unstable.
+            
+            Built on: ${{ github.event.repository.updated_at || 'just now' }}
+          files: |
+            ./artifacts/yardctl-debug
+            ./artifacts/*.deb
+            ./artifacts/*.pkg.tar.zst
+          prerelease: true
+          make_latest: false
+          # Ensure it overwrites the existing nightly tag
+          force_update: true
